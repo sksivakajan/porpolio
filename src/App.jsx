@@ -2,16 +2,19 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import profileImg from "./assets/profile.jpg";
 import GitHubProjects from "./GitHubProjects.jsx";
 import BlogSection from "./blog/BlogSection.jsx";
+import HackerNewsSection from "./HackerNewsSection.jsx";
 
 const NAME = "KAJAN SIVARAJA";
 const ROLE = "Cyber Security | Blue Team • Pentesting • Secure Coding";
 const TAGLINE =
   "I build secure systems, break insecure ones, and translate risk into action.";
+const CV_VIEW_URL = "https://drive.google.com/file/d/1IHY9_GvKuRiv4J3V6woCxJVla9xi1q2u/view?usp=sharing";
+const CV_DOWNLOAD_URL = "https://drive.google.com/uc?export=download&id=1IHY9_GvKuRiv4J3V6woCxJVla9xi1q2u";
 
 const LINKS = [
   { label: "GitHub", href: "https://github.com/sksivakajan" },
-  { label: "LinkedIn", href: "https://linkedin.com/" },
-  { label: "Email", href: "mailto:you@example.com" },
+  { label: "LinkedIn", href: "https://www.linkedin.com/in/sivakajan/" },
+  { label: "Email", href: "mailto:sivakajan0725@gmail.com" },
 ];
 const HACK_TOOLS = ["Nmap", "Burp Suite", "Wireshark", "Metasploit", "OWASP ZAP", "Kali Linux"];
 
@@ -167,9 +170,9 @@ function Terminal() {
       certs: () => CERTS.map((c) => `• ${c.name} — ${c.meta}`),
       blog: () => ["Blog posts live in src/blog/posts/*.md"],
       contact: () => [
-        "Email: you@example.com",
+        "Email: sivakajan0725@gmail.com",
         "GitHub: https://github.com/sksivakajan",
-        "LinkedIn: https://linkedin.com/",
+        "LinkedIn: https://www.linkedin.com/in/sivakajan/",
       ],
       clear: () => "__CLEAR__",
     }),
@@ -336,6 +339,7 @@ function Nav() {
         <nav className="navLinks" aria-label="Primary">
           <a href="#skills">Skills</a>
           <a href="#projects">Projects</a>
+          <a href="#hn-news">News</a>
           <a href="#blog">Blog</a>
           <a href="#certs">Certs</a>
           <a href="#contact">Contact</a>
@@ -398,6 +402,12 @@ function Hero() {
           </a>
           <a className="btn ghost" href="#blog">
             Read Blog
+          </a>
+          <a className="btn ghost" href={CV_VIEW_URL} target="_blank" rel="noreferrer">
+            View CV
+          </a>
+          <a className="btn" href={CV_DOWNLOAD_URL} target="_blank" rel="noreferrer">
+            Download CV
           </a>
         </div>
 
@@ -462,7 +472,7 @@ function Skills() {
 function Projects() {
   return (
     <Section id="projects" title="Projects from GitHub" eyebrow="AUTO LOADED">
-      <GitHubProjects username="sksivakajan" limit={6} />
+      <GitHubProjects username="sksivakajan" />
     </Section>
   );
 }
@@ -471,6 +481,14 @@ function Blog() {
   return (
     <Section id="blog" title="Blog / Writeups" eyebrow="MY POSTS">
       <BlogSection />
+    </Section>
+  );
+}
+
+function HackerNews() {
+  return (
+    <Section id="hn-news" title="Hacker News Latest" eyebrow="LIVE FEED">
+      <HackerNewsSection count={6} />
     </Section>
   );
 }
@@ -493,6 +511,45 @@ function Certs() {
 }
 
 function Contact() {
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    message: "",
+    company: "",
+  });
+  const [status, setStatus] = useState("idle");
+  const [errorMessage, setErrorMessage] = useState("");
+
+  async function onSubmit(e) {
+    e.preventDefault();
+    setStatus("sending");
+    setErrorMessage("");
+
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          message: form.message,
+          company: form.company,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || "Failed to send message.");
+      }
+
+      setStatus("success");
+      setForm({ name: "", email: "", message: "", company: "" });
+    } catch (err) {
+      setStatus("error");
+      setErrorMessage(err?.message || "Failed to send message.");
+    }
+  }
+
   return (
     <Section id="contact" title="Contact" eyebrow="LET’S BUILD">
       <div className="grid2">
@@ -502,38 +559,75 @@ function Contact() {
             Want a security review, secure coding advice, or collaboration? Send a message.
           </p>
 
-          <form
-            className="form"
-            onSubmit={(e) => {
-              e.preventDefault();
-              alert("Demo form: connect this to EmailJS / Formspree / your backend API.");
-            }}
-          >
+          <form className="form" onSubmit={onSubmit}>
             <div className="row">
-              <input placeholder="Your name" required />
-              <input placeholder="Email" type="email" required />
+              <input
+                placeholder="Your name"
+                required
+                minLength={2}
+                maxLength={80}
+                value={form.name}
+                onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+              />
+              <input
+                placeholder="Email"
+                type="email"
+                required
+                value={form.email}
+                onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
+              />
             </div>
-            <textarea placeholder="Message" rows={5} required />
-            <button className="btn primary" type="submit">
-              Send
+            <textarea
+              placeholder="Message"
+              rows={5}
+              required
+              minLength={10}
+              maxLength={5000}
+              value={form.message}
+              onChange={(e) => setForm((prev) => ({ ...prev, message: e.target.value }))}
+            />
+
+            <input
+              type="text"
+              name="company"
+              tabIndex={-1}
+              autoComplete="off"
+              value={form.company}
+              onChange={(e) => setForm((prev) => ({ ...prev, company: e.target.value }))}
+              style={{ position: "absolute", left: "-9999px", opacity: 0, pointerEvents: "none" }}
+              aria-hidden="true"
+            />
+
+            <button className="btn primary" type="submit" disabled={status === "sending"}>
+              {status === "sending" ? "Sending..." : "Send"}
             </button>
+
+            {status === "success" ? <p className="cardBody">✅ Message sent!</p> : null}
+            {status === "error" ? <p className="cardBody">{errorMessage}</p> : null}
           </form>
         </div>
 
         <div className="card" data-reveal>
           <div className="cardTitle">Quick links</div>
-          <div className="stack" style={{ marginTop: 12 }}>
-            {LINKS.map((l) => (
-              <a key={l.label} className="quick" href={l.href} target="_blank" rel="noreferrer">
-                <span className="quickIcon" />
-                <div>
-                  <div className="quickTitle">{l.label}</div>
-                  <div className="quickMeta">{l.href}</div>
-                </div>
-                <span className="arrow">↗</span>
-              </a>
-            ))}
-          </div>
+              <div className="stack" style={{ marginTop: 12 }}>
+                {LINKS.map((l) => (
+                  <a
+                    key={l.label}
+                    className="quick"
+                    href={l.href}
+                    target={l.target || "_blank"}
+                    rel={l.target === "_blank" ? "noreferrer" : undefined}
+                    download={l.download}
+                  >
+                    <span className="quickIcon" />
+                    <div className="quickBody">
+                      <div className="quickTitle">{l.label}</div>
+                      <div className="quickMeta">{l.href}</div>
+                    </div>
+                    <span className="arrow">↗</span>
+                  </a>
+                ))}
+              </div>
 
           <div className="divider" />
 
@@ -553,7 +647,6 @@ function Contact() {
     </Section>
   );
 }
-
 function Footer() {
   return (
     <footer className="footer">
@@ -600,6 +693,7 @@ export default function App() {
         <Hero />
         <Skills />
         <Projects />
+        <HackerNews />
         <Blog />
         <Certs />
         <Contact />

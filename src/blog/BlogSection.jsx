@@ -23,7 +23,7 @@ export default function BlogSection() {
               onClick={() => setActive(p.slug)}
               type="button"
             >
-              <div>
+              <div className="quickBody">
                 <div className="quickTitle">{p.title}</div>
                 <div className="quickMeta">
                   {p.date} {p.tags?.length ? ` • ${p.tags.join(", ")}` : ""}
